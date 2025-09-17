@@ -1,0 +1,212 @@
+{
+  "name": "AgroBOT",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analise-planta",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -64,
+        208
+      ],
+      "id": "36c0c9cc-5743-4c5d-9106-30c032b2a65a",
+      "name": "Webhook",
+      "webhookId": "c599e16f-4470-4867-a16a-5458e01ad5ba"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-inference.huggingface.co/models/linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "=data",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        208
+      ],
+      "id": "7d47b70e-a441-4cd9-ba60-69a156e446b8",
+      "name": "Hugging Face API",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "xj4e5D6oG74KnqSt",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um especialista em agronomia. A análise de uma imagem de planta retornou o seguinte diagnóstico mais provável: '{{ $node[\"Hugging Face API\"].json.label }}' com uma confiança de {{ $node[\"Hugging Face API\"].json.score }}.\\n\\nCrie um resumo amigável em português do Brasil para um agricultor. O resumo deve incluir:\\n1.  **O que é a doença**: Uma explicação simples.\\n2.  **Sintomas comuns**: O que observar na planta.\\n3.  **Sugestão de Ação**: Próximos passos práticos.\\n\\n**Importante**: Se a confiança for baixa (menor que 0.60), adicione uma nota clara no final dizendo que o diagnóstico não é conclusivo e que uma consulta com um especialista local é fortemente recomendada antes de tomar qualquer ação.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        496,
+        208
+      ],
+      "id": "f9d8b9aa-684e-454a-b295-dc4be0bca6ae",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        448,
+        432
+      ],
+      "id": "8806bdc6-03c2-4fdb-a5b4-3ed74f56e38c",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "p1dpxs77lRPeUpQA",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pop",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        96,
+        64
+      ],
+      "id": "6113f1a1-3089-4f26-a3e0-ed4a0dc75ce7",
+      "name": "Redis"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        880,
+        208
+      ],
+      "id": "836d5cf7-60db-40a0-a98f-0e68ec40224c",
+      "name": "Send message",
+      "webhookId": "a4f37792-564b-4471-a592-0dd19e9d3b77"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        384
+      ],
+      "id": "e1768477-4ecd-451f-935c-64351e601068",
+      "name": "Send a message",
+      "webhookId": "337a2fa3-2a63-4f08-b576-45fdc1e9697a"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        32
+      ],
+      "id": "741e676f-7306-4c2f-bb63-fce32145e4cb",
+      "name": "Send message1",
+      "webhookId": "ec45e45c-26dd-4d60-92ac-6e75c9d92baf"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        432
+      ],
+      "id": "ccd1c083-5c6a-4667-a420-10b741b13a98",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Hugging Face API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hugging Face API": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Send message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2e93fb97-2088-46fa-97fe-54323a13b2f1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4119a6a98b1c1ede5e7fd19f63932bd42f45856a33e836d6bca0645e07744440"
+  },
+  "id": "KdEsSHeZa2AFJKvK",
+  "tags": []
+}
